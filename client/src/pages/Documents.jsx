@@ -20,6 +20,14 @@ function UploadDialog({ open, onClose, onDone, categories, members, isOwner }) {
   const [form, setForm] = useState({ title: '', category_id: '', owner_user_id: '', issue_date: '', expiry_date: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [drag, setDrag] = useState(false);
+
+  const pickFile = (f) => {
+    if (!f) return;
+    setErr('');
+    setFile(f);
+    setForm(prev => prev.title ? prev : { ...prev, title: f.name.replace(/\.[^.]+$/, '') });
+  };
 
   const submit = async () => {
     if (!file) { setErr('Choisissez un fichier.'); return; }
@@ -44,11 +52,30 @@ function UploadDialog({ open, onClose, onDone, categories, members, isOwner }) {
       <DialogTitle>Ajouter un document</DialogTitle>
       <DialogContent>
         {err && <Typography color="error" variant="body2" sx={{ mb: 1 }}>{err}</Typography>}
-        <Button component="label" variant="outlined" startIcon={<UploadFileIcon />} fullWidth sx={{ my: 1, py: 1.3 }}>
-          {file ? file.name : 'Choisir un fichier (PDF, image…)'}
+        <Box
+          component="label"
+          onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+          onDragEnter={(e) => { e.preventDefault(); setDrag(true); }}
+          onDragLeave={(e) => { e.preventDefault(); setDrag(false); }}
+          onDrop={(e) => { e.preventDefault(); setDrag(false); pickFile(e.dataTransfer.files?.[0]); }}
+          sx={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5,
+            border: '2px dashed', borderColor: drag ? 'primary.main' : 'divider',
+            bgcolor: drag ? 'action.hover' : 'transparent',
+            borderRadius: 2, p: 3, my: 1, textAlign: 'center', cursor: 'pointer',
+            transition: 'border-color .15s, background-color .15s',
+          }}
+        >
+          <UploadFileIcon color={drag ? 'primary' : 'action'} />
+          <Typography variant="body2" fontWeight={600} color={file ? 'text.primary' : 'text.secondary'}>
+            {file ? file.name : 'Glissez-déposez un fichier ici'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            ou cliquez pour parcourir · PDF, image, Word… (max 25 Mo)
+          </Typography>
           <input hidden type="file" accept=".pdf,image/*,.doc,.docx,.txt"
-            onChange={(e) => { setFile(e.target.files[0]); if (!form.title && e.target.files[0]) setForm(f => ({ ...f, title: e.target.files[0].name.replace(/\.[^.]+$/, '') })); }} />
-        </Button>
+            onChange={(e) => pickFile(e.target.files?.[0])} />
+        </Box>
         <TextField label="Titre" fullWidth margin="dense" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         <TextField select label="Catégorie" fullWidth margin="dense" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
           <MenuItem value="">—</MenuItem>
