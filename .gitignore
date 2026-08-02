@@ -1,0 +1,67 @@
+# ============================================================================
+#  Coffre Familial — .gitignore
+# ============================================================================
+
+# ----- Dépendances -----
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# ----- Secrets & configuration locale (NE JAMAIS COMMITTER) -----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ----- Build / sortie -----
+dist/
+build/
+**/dist/
+.vite/
+*.tsbuildinfo
+
+# ----- Stockage des fichiers chiffrés & données -----
+storage/
+server/storage/
+uploads/
+/var/lib/coffre/
+
+# ----- Logs -----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ----- Caches d'outils -----
+.npm/
+.eslintcache
+.cache/
+coverage/
+*.tgz
+
+# ----- Éditeurs / IDE -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ----- Système d'exploitation -----
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ----- Divers -----
+tmp/
+temp/
+*.bak
+*.old
