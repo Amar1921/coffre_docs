@@ -1,151 +1,130 @@
-# Coffre Familial — coffre-fort documentaire sécurisé
+<h1 align="center">🔐 Coffre Familial</h1>
 
-Application pour conserver vos documents personnels et ceux de votre famille (pièces d'identité, assurances, santé, scolaire, finances…). Le **propriétaire** voit tout ; chaque **membre** ne voit que ses propres documents et ceux qui lui sont **partagés**. Interface **mobile-first**.
+<p align="center">
+  Coffre-fort documentaire sécurisé, mobile-first, pour vos documents personnels et ceux de votre famille.
+</p>
 
-## Stack
+<p align="center">
+  <img alt="Node.js" src="https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white">
+  <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black">
+  <img alt="MUI" src="https://img.shields.io/badge/MUI-5-007FFF?logo=mui&logoColor=white">
+  <img alt="MySQL" src="https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white">
+  <img alt="Chiffrement" src="https://img.shields.io/badge/Chiffrement-AES--256--GCM-2E7D32">
+</p>
 
-- **Backend** : Node.js + Express, MySQL (mysql2), JWT, bcrypt, Helmet, rate-limiting.
-- **Frontend** : React + Vite + MUI (Material UI), orienté mobile (navigation basse, plein écran).
-- **Chiffrement** : fichiers chiffrés au repos en **AES-256-GCM** (avec tag d'authentification), stockés hors de la racine web.
-- **Lecteur PDF intégré** : visualisation des PDF et images directement dans l'app (pdf.js, worker bundlé localement — fonctionne sur mobile).
+---
 
-## Sécurité
+## 📖 Présentation
 
-- Fichiers **chiffrés au repos** (AES-256-GCM). Le contenu n'est déchiffré qu'à la volée, en mémoire, pour un utilisateur autorisé. Une empreinte SHA-256 du clair est conservée pour l'intégrité.
-- **Cloisonnement strict** : un membre ne peut accéder qu'à ses documents ou à ceux partagés avec lui (vérifié côté serveur sur chaque route, y compris consultation et téléchargement).
-- **Partages expirables et révocables** : droit `lecture` ou `lecture+téléchargement`, date d'expiration optionnelle, révocation immédiate.
-- **Journal d'audit** horodaté (connexion, consultation, téléchargement, ajout, suppression, partage, révocation…) consultable par le propriétaire.
-- Mots de passe hachés **bcrypt** (coût 12), **JWT** signé, en-têtes de sécurité (Helmet + Apache), **rate-limiting** sur la connexion.
-- Le dossier de stockage doit rester **hors racine web** (ex. `/var/lib/coffre/uploads`, droits `750` pour `www-data`).
+**Coffre Familial** permet de conserver au même endroit, en toute sécurité, les documents importants d'une famille : pièces d'identité, assurances, documents de santé, scolaires, financiers… Chaque fichier est **chiffré au repos**.
 
-## Fonctionnalités
+- Le **propriétaire** a accès à tous les documents.
+- Chaque **membre** ne voit que **ses propres documents** et **ceux qui lui sont partagés**.
 
-Tableau de bord (statistiques adaptées au rôle, échéances à venir) · documents (recherche, filtres par catégorie et par membre) · téléversement chiffré avec dates d'émission/expiration · **visualisation intégrée** (PDF page par page + images) · téléchargement · partage owner→membre · rappels d'expiration (CNI, passeport, assurance…) · gestion des membres de la famille (propriétaire) · journal d'audit · notifications · changement de mot de passe.
+L'interface est pensée **mobile-first** (navigation basse, plein écran) et intègre un **lecteur PDF**.
 
-## Arborescence
+## ✨ Fonctionnalités
+
+- 📊 **Tableau de bord** adapté au rôle : statistiques et échéances à venir.
+- 📁 **Documents** : recherche, filtres par catégorie et par membre.
+- ⬆️ **Téléversement chiffré** avec dates d'émission et d'expiration.
+- 👁️ **Lecteur intégré** : PDF (page par page) et images, directement dans l'app.
+- 🤝 **Partages expirables et révocables** (lecture seule ou lecture + téléchargement).
+- ⏰ **Rappels d'expiration** (CNI, passeport, assurance…).
+- 👨‍👩‍👧 **Gestion des membres** de la famille (propriétaire).
+- 📝 **Journal d'audit** horodaté (propriétaire).
+- 🔔 **Notifications** et changement de mot de passe.
+
+## 🧱 Stack technique
+
+| Côté | Technologies |
+|------|--------------|
+| **Backend** | Node.js, Express, MySQL (mysql2), JWT, bcrypt, Helmet, express-rate-limit |
+| **Frontend** | React, Vite, MUI (Material UI), Axios, React Router, pdf.js |
+| **Chiffrement** | AES-256-GCM (Node.js `crypto`) |
+
+## 🔒 Sécurité
+
+- **Fichiers chiffrés au repos** en AES-256-GCM (avec tag d'authentification), stockés **hors de la racine web**. Le contenu n'est déchiffré qu'à la volée, en mémoire, pour un utilisateur autorisé. Une empreinte SHA-256 du clair est conservée pour vérifier l'intégrité.
+- **Cloisonnement strict** vérifié côté serveur sur chaque route (y compris la consultation et le téléchargement) : un membre ne peut atteindre que ses documents ou ceux partagés avec lui.
+- **Partages** avec date d'expiration optionnelle et révocation immédiate.
+- **Journal d'audit** de toutes les actions sensibles.
+- Mots de passe **bcrypt** (coût 12), **JWT** signé, en-têtes de sécurité (Helmet), **rate-limiting** sur la connexion.
+
+> ⚠️ La clé `FILE_ENCRYPTION_KEY` chiffre tous les fichiers. **Si vous la perdez, les documents déjà chiffrés sont irrécupérables.** Conservez-la en sécurité, séparément de la base de données, et ne la committez jamais.
+
+## 🚀 Démarrage rapide (local)
+
+**Prérequis :** Node.js 18+ et MySQL 8 (ou MariaDB).
+
+### 1. Backend
+
+```bash
+cd server
+cp .env.example .env
+```
+
+Générez les secrets et renseignez la connexion MySQL dans `.env` :
+
+```bash
+openssl rand -hex 32   # -> JWT_SECRET
+openssl rand -hex 32   # -> FILE_ENCRYPTION_KEY  (64 caractères hex, OBLIGATOIRE)
+```
+
+Puis :
+
+```bash
+npm install
+npm run init-db                                       # crée les tables + catégories
+npm run create-owner -- vous@exemple.com MotDePasse "Votre Nom"
+npm start                                             # API sur http://127.0.0.1:4200
+```
+
+### 2. Frontend
+
+```bash
+cd client
+npm install
+npm run dev                                           # http://localhost:5173
+```
+
+Le serveur de dev proxifie automatiquement `/api` vers `http://127.0.0.1:4200`. Ouvrez **http://localhost:5173** et connectez-vous avec le compte propriétaire créé ci-dessus.
+
+## ⚙️ Variables d'environnement (`server/.env`)
+
+| Variable | Description | Exemple |
+|----------|-------------|---------|
+| `PORT` | Port de l'API | `4200` |
+| `CORS_ORIGINS` | Origines autorisées (frontend) | `http://localhost:5173` |
+| `DB_HOST` / `DB_PORT` | Hôte / port MySQL | `127.0.0.1` / `3306` |
+| `DB_USER` / `DB_PASSWORD` | Identifiants MySQL | `coffre_user` / `…` |
+| `DB_NAME` | Base de données | `coffre_famille` |
+| `JWT_SECRET` | Secret de signature JWT | `openssl rand -hex 32` |
+| `JWT_EXPIRES` | Durée de validité du token | `12h` |
+| `FILE_ENCRYPTION_KEY` | Clé AES-256 (64 hex) | `openssl rand -hex 32` |
+| `STORAGE_DIR` | Dossier des fichiers chiffrés (hors racine web) | `/var/lib/coffre/uploads` |
+| `MAX_FILE_SIZE_MB` | Taille max d'un fichier | `25` |
+
+## 🗂️ Structure du projet
 
 ```
 coffre_famille/
 ├── server/                 API Node/Express
-│   ├── src/
-│   │   ├── index.js
-│   │   ├── config/         env.js, db.js
-│   │   ├── middleware/     auth.js (JWT + rôles)
-│   │   ├── routes/         auth, members, documents, shares, misc
-│   │   ├── utils/          crypto.js (AES-256-GCM), access.js, audit.js
-│   │   ├── db/schema.sql
-│   │   └── scripts/        init-db.js, create-owner.js
-│   └── .env.example
-├── client/                 SPA React + MUI (Vite)
 │   └── src/
-│       ├── pages/          Login, Dashboard, Documents, DocumentDetail, Members, Audit, Profile
-│       └── components/     DocViewer.jsx (lecteur PDF/images)
-└── deploy/coffre.amarsyll.pro.conf   VirtualHost Apache
+│       ├── index.js
+│       ├── config/         env.js, db.js
+│       ├── middleware/     auth.js (JWT + rôles)
+│       ├── routes/         auth, members, documents, shares, misc
+│       ├── utils/          crypto.js (AES-256-GCM), access.js, audit.js
+│       ├── db/schema.sql
+│       └── scripts/        init-db.js, create-owner.js
+└── client/                 SPA React + MUI (Vite)
+    └── src/
+        ├── pages/          Login, Dashboard, Documents, DocumentDetail, Members, Audit, Profile
+        └── components/     DocViewer.jsx (lecteur PDF / images)
 ```
 
-## Installation locale (développement)
-
-Prérequis : Node.js 18+ et MySQL 8 (ou MariaDB).
-
-```bash
-# 1) Backend
-cd server
-cp .env.example .env
-# Générez les secrets :
-#   openssl rand -hex 32   -> JWT_SECRET
-#   openssl rand -hex 32   -> FILE_ENCRYPTION_KEY   (32 octets = 64 hex, OBLIGATOIRE)
-# Renseignez la connexion MySQL dans .env, puis :
-npm install
-npm run init-db                                   # crée les tables + catégories
-npm run create-owner -- vous@exemple.com MotDePasse "Votre Nom"
-npm start                                          # API sur http://127.0.0.1:4200
-
-# 2) Frontend (dans un autre terminal)
-cd client
-npm install                                        # installe aussi pdfjs-dist (lecteur PDF)
-npm run dev                                        # http://localhost:5173 (proxy /api -> 4200)
-```
-
-> ⚠️ Conservez précieusement `FILE_ENCRYPTION_KEY`. **Si vous la perdez, les fichiers déjà chiffrés sont irrécupérables.** Sauvegardez-la séparément de la base.
-
-## Déploiement sur le VPS (coffre.amarsyll.pro)
-
-### 1. Paquets
-
-```bash
-sudo apt install -y apache2 mysql-server nodejs npm
-sudo npm install -g pm2
-sudo a2enmod proxy proxy_http rewrite headers ssl
-```
-
-### 2. Base de données
-
-```bash
-sudo mysql -e "CREATE DATABASE coffre_famille CHARACTER SET utf8mb4;"
-sudo mysql -e "CREATE USER 'coffre_user'@'localhost' IDENTIFIED BY 'MOT_DE_PASSE'; GRANT ALL ON coffre_famille.* TO 'coffre_user'@'localhost'; FLUSH PRIVILEGES;"
-```
-
-### 3. Code + stockage chiffré
-
-> Transférez seulement le **code source** (pas `node_modules` ni `dist` : trop de fichiers, ça échoue en FTP). Les dépendances s'installent sur le serveur avec `npm ci`. Le plus simple : `git clone` ou `rsync` (le `.gitignore` exclut déjà `node_modules`).
-
-```bash
-sudo mkdir -p /var/www/coffre && sudo rsync -a coffre_famille/ /var/www/coffre/
-sudo mkdir -p /var/lib/coffre/uploads         # stockage chiffré HORS racine web
-sudo chown -R www-data:www-data /var/lib/coffre
-sudo chmod -R 750 /var/lib/coffre
-```
-
-### 4. Backend (API)
-
-```bash
-cd /var/www/coffre/server
-cp .env.example .env    # renseigner DB, secrets, STORAGE_DIR=/var/lib/coffre/uploads, CORS_ORIGINS=https://coffre.amarsyll.pro
-npm ci --omit=dev
-npm run init-db
-npm run create-owner -- vous@exemple.com MotDePasse "Votre Nom"
-pm2 start src/index.js --name coffre-api --cwd /var/www/coffre/server && pm2 save
-```
-
-### 5. Frontend (build statique)
-
-```bash
-cd /var/www/coffre/client
-npm ci && npm run build          # génère client/dist servi par Apache
-```
-
-### 6. Apache + HTTPS
-
-⚠️ Le vhost final référence des certificats SSL qui n'existent pas encore : il faut **obtenir le certificat d'abord** avec une config `:80` temporaire, sinon `apache2ctl configtest` échoue (`SSLCertificateFile … does not exist`). Assurez-vous que le DNS de `coffre.amarsyll.pro` pointe vers le VPS.
-
-```bash
-# a) Config temporaire (port 80 seulement) pour le challenge Let's Encrypt
-sudo tee /etc/apache2/sites-available/coffre.amarsyll.pro.conf >/dev/null <<'EOF'
-<VirtualHost *:80>
-    ServerName coffre.amarsyll.pro
-    DocumentRoot /var/www/coffre/client/dist
-    <Directory /var/www/coffre/client/dist>
-        AllowOverride All
-        Require all granted
-    </Directory>
-    ErrorLog  ${APACHE_LOG_DIR}/coffre.amarsyll.pro-error.log
-    CustomLog ${APACHE_LOG_DIR}/coffre.amarsyll.pro-access.log combined
-</VirtualHost>
-EOF
-sudo a2ensite coffre.amarsyll.pro
-sudo apache2ctl configtest && sudo systemctl reload apache2
-
-# b) Obtenir le certificat SANS que certbot réécrive la config
-#    (certonly : sinon le proxy /api et le fallback SPA seraient perdus)
-sudo certbot certonly --apache -d coffre.amarsyll.pro
-
-# c) Restaurer la config complète (proxy /api + SPA + SSL). Les certificats
-#    existent maintenant, donc plus d'erreur SSLCertificateFile.
-sudo cp /var/www/coffre/deploy/coffre.amarsyll.pro.conf /etc/apache2/sites-available/coffre.amarsyll.pro.conf
-sudo apache2ctl configtest && sudo systemctl reload apache2
-```
-
-## Rôles
+## 👥 Rôles & permissions
 
 | Action | Propriétaire | Membre |
 |--------|:-----------:|:------:|
@@ -157,9 +136,6 @@ sudo apache2ctl configtest && sudo systemctl reload apache2
 | Gérer les membres | ✔ | — |
 | Journal d'audit | ✔ | — |
 
-## Dépannage
+## 📄 Licence
 
-- **`ECONNREFUSED 127.0.0.1:4200`** : l'API Node n'est pas démarrée. Vérifiez `pm2 status` / `pm2 logs coffre-api`. Souvent dû à un `.env` incomplet — `FILE_ENCRYPTION_KEY` doit faire exactement 64 caractères hex, sinon le serveur quitte au démarrage.
-- **`SSLCertificateFile … does not exist`** : certbot n'a pas encore tourné → suivez l'étape 6 (config `:80` temporaire puis `certonly`).
-- **Page « Membres » vide** : vous êtes connecté avec un compte membre (réservé au propriétaire) ou l'API est injoignable ; le message d'erreur s'affiche désormais dans la page.
-- **PDF qui ne s'affiche pas** : le worker pdf.js est bundlé localement par Vite (`npm run build`) — assurez-vous d'avoir rebuild le client après mise à jour.
+Projet personnel — tous droits réservés. Réutilisation soumise à l'autorisation de l'auteur.
