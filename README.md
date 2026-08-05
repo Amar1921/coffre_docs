@@ -26,7 +26,10 @@ L'interface est pensée **mobile-first** (navigation basse, plein écran) et int
 ## ✨ Fonctionnalités
 
 - 📊 **Tableau de bord** adapté au rôle : statistiques et échéances à venir.
-- 📁 **Documents** : recherche, filtres par catégorie et par membre.
+- 📁 **Documents** : recherche, filtres par catégorie, membre, type de fichier, plage de dates et favoris.
+- 🔀 **Tri** : par date d'ajout, nom, taille ou expiration proche.
+- 🗄️ **Archivage** : masquer un document des listes sans le supprimer (vue « Archivés » dédiée, désarchivage en un clic).
+- ⭐ **Favoris** : épingler les documents importants.
 - ⬆️ **Téléversement chiffré** avec dates d'émission et d'expiration.
 - 👁️ **Lecteur intégré** : PDF (page par page) et images, directement dans l'app.
 - 🤝 **Partages expirables et révocables** (lecture seule ou lecture + téléchargement).
@@ -79,6 +82,9 @@ npm run init-db                                       # crée les tables + caté
 npm run create-owner -- vous@exemple.com MotDePasse "Votre Nom"
 npm start                                             # API sur http://127.0.0.1:4200
 ```
+
+> **Base existante ?** Après une mise à jour du code, exécutez `npm run migrate`
+> pour ajouter les nouvelles colonnes (archivage, favoris) sans toucher aux données.
 
 ### 2. Frontend
 

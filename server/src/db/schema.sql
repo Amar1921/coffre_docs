@@ -46,12 +46,16 @@ CREATE TABLE IF NOT EXISTS `documents` (
   `enc_tag` VARCHAR(32) NOT NULL,        -- tag d'authentification AES-GCM (hex)
   `issue_date` DATE DEFAULT NULL,
   `expiry_date` DATE DEFAULT NULL,       -- pour CNI, passeport, assurance...
+  `is_favorite` TINYINT(1) NOT NULL DEFAULT 0,
+  `archived` TINYINT(1) NOT NULL DEFAULT 0,   -- masqué des listes par défaut
+  `archived_at` DATETIME DEFAULT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_doc_owner` (`owner_user_id`),
   KEY `idx_doc_category` (`category_id`),
   KEY `idx_doc_expiry` (`expiry_date`),
+  KEY `idx_doc_archived` (`archived`),
   CONSTRAINT `fk_doc_owner` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_doc_cat` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

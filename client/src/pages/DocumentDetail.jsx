@@ -1,4 +1,7 @@
-import { ArrowBackIcon, VisibilityIcon, DownloadIcon, DeleteIcon, ShareIcon } from '../icons.jsx';
+import {
+  ArrowBackIcon, VisibilityIcon, DownloadIcon, DeleteIcon, ShareIcon,
+  ArchiveIcon, UnarchiveIcon, StarIcon, StarBorderIcon
+} from '../icons.jsx';
 import { useEffect, useState } from 'react';
 import {
   Box, Paper, Typography, Stack, Button, Chip, Divider, IconButton, Dialog, DialogTitle,
@@ -54,6 +57,24 @@ export default function DocumentDetail() {
     nav('/documents');
   };
 
+  const isArchived = Number(doc?.archived) === 1;
+  const isFav = Number(doc?.is_favorite) === 1;
+
+  const toggleArchive = async () => {
+    try {
+      await api.patch(`/documents/${id}/archive`, { archived: !isArchived });
+      setSnack(isArchived ? 'Document désarchivé.' : 'Document archivé.');
+      load();
+    } catch { setSnack('Action impossible.'); }
+  };
+
+  const toggleFavorite = async () => {
+    try {
+      await api.patch(`/documents/${id}/favorite`, { favorite: !isFav });
+      setDoc(prev => ({ ...prev, is_favorite: isFav ? 0 : 1 }));
+    } catch { setSnack('Action impossible.'); }
+  };
+
   const loadShares = () => {
     api.get(`/shares/document/${id}`).then(r => setShares(r.data.shares)).catch(() => {});
     if (isOwner) api.get('/members/options').then(r => setMembers(r.data.members.filter(m => m.id !== doc?.owner_user_id))).catch(() => {});
@@ -79,8 +100,21 @@ export default function DocumentDetail() {
       <Box>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
           <IconButton onClick={() => nav('/documents')}><ArrowBackIcon /></IconButton>
-          <Typography variant="h6" noWrap>{doc.title}</Typography>
+          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>{doc.title}</Typography>
+          {canManage && (
+            <IconButton onClick={toggleFavorite} sx={{ color: isFav ? 'warning.main' : 'action.disabled' }}
+              title={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}>
+              {isFav ? <StarIcon /> : <StarBorderIcon />}
+            </IconButton>
+          )}
         </Stack>
+
+        {isArchived && (
+          <Alert severity="warning" sx={{ mb: 1, borderRadius: 3 }}
+            action={canManage && <Button color="inherit" size="small" onClick={toggleArchive}>Désarchiver</Button>}>
+            Ce document est archivé{doc.archived_at ? ` depuis le ${new Date(doc.archived_at).toLocaleDateString('fr-FR')}` : ''}.
+          </Alert>
+        )}
 
         <Paper sx={{ p: 2, borderRadius: 3, mb: 2 }}>
           {doc.description && <Typography variant="body2" sx={{ mb: 1 }}>{doc.description}</Typography>}
@@ -107,6 +141,15 @@ export default function DocumentDetail() {
               <Button variant="outlined" startIcon={<Icon>edit</Icon>} fullWidth onClick={() => setEditOpen(true)}>Modifier</Button>
               <Button variant="outlined" color="secondary" startIcon={<ShareIcon />} fullWidth onClick={openShare}>Partager à un membre</Button>
             </Stack>
+        )}
+
+        {canManage && !isArchived && (
+            <Button variant="outlined" color="warning" fullWidth startIcon={<ArchiveIcon />}
+                    onClick={toggleArchive} sx={{ mb: 1 }}>Archiver</Button>
+        )}
+        {canManage && isArchived && (
+            <Button variant="outlined" color="warning" fullWidth startIcon={<UnarchiveIcon />}
+                    onClick={toggleArchive} sx={{ mb: 1 }}>Désarchiver</Button>
         )}
 
         {/* Partage du lien via applications externes */}

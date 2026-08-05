@@ -8,6 +8,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "init-db": "node src/scripts/init-db.js",
+    "migrate": "node src/scripts/migrate.js",
     "create-owner": "node src/scripts/create-owner.js"
   },
   "dependencies": {

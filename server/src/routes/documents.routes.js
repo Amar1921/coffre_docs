@@ -24,9 +24,20 @@ const ALLOWED = new Set([
   'text/plain',
 ]);
 
-/** Liste des documents visibles par l'utilisateur (avec filtres). */
+/** Tris autorisés (liste blanche — jamais d'injection dans ORDER BY). */
+const SORTS = {
+  date_desc: 'd.created_at DESC',
+  date_asc: 'd.created_at ASC',
+  name_asc: 'd.title ASC',
+  name_desc: 'd.title DESC',
+  size_desc: 'd.size_bytes DESC',
+  size_asc: 'd.size_bytes ASC',
+  expiry_asc: 'd.expiry_date IS NULL, d.expiry_date ASC',
+};
+
+/** Liste des documents visibles par l'utilisateur (avec filtres et tri). */
 router.get('/', async (req, res) => {
-  const { q, category, member, expiring } = req.query;
+  const { q, category, member, expiring, sort, date_from, date_to, type, favorite, archived } = req.query;
   const params = { uid: req.user.id };
   const where = [];
 
@@ -38,13 +49,23 @@ router.get('/', async (req, res) => {
       WHERE shared_with_user_id = :uid AND revoked = 0 AND (expires_at IS NULL OR expires_at > NOW())
     ))`);
   }
+  // Par défaut, on masque les documents archivés ; archived=1 les affiche seuls.
+  where.push(archived === '1' ? 'd.archived = 1' : 'd.archived = 0');
   if (category) { where.push('d.category_id = :cat'); params.cat = parseInt(category, 10); }
   if (q) { where.push('(d.title LIKE :q OR d.description LIKE :q OR d.original_name LIKE :q)'); params.q = `%${q}%`; }
   if (expiring === '1') { where.push('d.expiry_date IS NOT NULL AND d.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)'); }
+  if (favorite === '1') { where.push('d.is_favorite = 1'); }
+  if (date_from) { where.push('d.created_at >= :from'); params.from = date_from; }
+  if (date_to) { where.push('d.created_at < DATE_ADD(:to, INTERVAL 1 DAY)'); params.to = date_to; }
+  if (type === 'pdf') { where.push("d.mime_type = 'application/pdf'"); }
+  else if (type === 'image') { where.push("d.mime_type LIKE 'image/%'"); }
+  else if (type === 'other') { where.push("d.mime_type <> 'application/pdf' AND d.mime_type NOT LIKE 'image/%'"); }
 
+  const orderBy = SORTS[sort] || SORTS.date_desc;
   const sql = `
     SELECT d.id, d.title, d.description, d.category_id, d.owner_user_id, d.original_name,
            d.mime_type, d.extension, d.size_bytes, d.issue_date, d.expiry_date, d.created_at,
+           d.is_favorite, d.archived, d.archived_at,
            c.name AS category_name, c.icon AS category_icon,
            u.full_name AS owner_name,
            (d.owner_user_id <> :uid) AS is_shared
@@ -52,7 +73,7 @@ router.get('/', async (req, res) => {
     LEFT JOIN categories c ON c.id = d.category_id
     LEFT JOIN users u ON u.id = d.owner_user_id
     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-    ORDER BY d.created_at DESC
+    ORDER BY ${orderBy}
     LIMIT 500`;
   const rows = await query(sql, params);
   res.json({ documents: rows });
@@ -71,7 +92,7 @@ router.get('/expiring', async (req, res) => {
     `SELECT d.id, d.title, d.expiry_date, u.full_name AS owner_name,
             DATEDIFF(d.expiry_date, CURDATE()) AS days_left
      FROM documents d LEFT JOIN users u ON u.id = d.owner_user_id
-     WHERE ${scope} AND d.expiry_date IS NOT NULL
+     WHERE ${scope} AND d.archived = 0 AND d.expiry_date IS NOT NULL
        AND d.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 60 DAY)
      ORDER BY d.expiry_date ASC LIMIT 100`,
     params
@@ -158,6 +179,32 @@ router.put('/:id', async (req, res) => {
   );
   await audit(req, { action: 'UPDATE', entityType: 'document', entityId: access.doc.id });
   res.json({ ok: true });
+});
+
+/** Archiver / désarchiver un document (le fichier reste chiffré sur disque). */
+router.patch('/:id/archive', async (req, res) => {
+  const access = await resolveDocumentAccess(req.user, parseInt(req.params.id, 10));
+  if (!access || access.permission !== 'download') {
+    return res.status(403).json({ error: 'Action non autorisée.' });
+  }
+  const archived = req.body?.archived === false ? 0 : 1;
+  await query(
+    'UPDATE documents SET archived = :arch, archived_at = :at WHERE id = :id',
+    { id: access.doc.id, arch: archived, at: archived ? new Date() : null }
+  );
+  await audit(req, { action: archived ? 'ARCHIVE' : 'UNARCHIVE', entityType: 'document', entityId: access.doc.id });
+  res.json({ ok: true, archived: !!archived });
+});
+
+/** Marquer / retirer un document des favoris. */
+router.patch('/:id/favorite', async (req, res) => {
+  const access = await resolveDocumentAccess(req.user, parseInt(req.params.id, 10));
+  if (!access || access.permission !== 'download') {
+    return res.status(403).json({ error: 'Action non autorisée.' });
+  }
+  const fav = req.body?.favorite === false ? 0 : 1;
+  await query('UPDATE documents SET is_favorite = :fav WHERE id = :id', { id: access.doc.id, fav });
+  res.json({ ok: true, favorite: !!fav });
 });
 
 /** Consulter (inline) ou télécharger (attachment) un document déchiffré. */
